@@ -79,8 +79,9 @@ end
 
 
 # Setup the load path ..
-$LOAD_PATH.unshift File.dirname(File.dirname(__FILE__)) + '/lib'
-$LOAD_PATH.unshift File.dirname(__FILE__)
+path = File.dirname(__FILE__)
+$LOAD_PATH.unshift path
+$LOAD_PATH.unshift File.expand_path(File.join(path, '..', 'lib'))
 
 require 'rack/cache'
 
