@@ -66,7 +66,7 @@ module Rack::Cache
       end
 
       # Remove the body corresponding to key; return nil.
-      def purge(key)
+      def purge(key, path=false, query=false)
         @hash.delete(key)
         nil
       end
@@ -137,7 +137,7 @@ module Rack::Cache
         [key, size]
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         File.unlink body_path(key)
         nil
       rescue Errno::ENOENT
@@ -231,7 +231,7 @@ module Rack::Cache
         [key, size] if cache.set(key, buf.string)
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         cache.delete(key)
         nil
       end
@@ -272,7 +272,7 @@ module Rack::Cache
         [key, size]
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         cache.delete(key)
         nil
       rescue ::Memcached::NotFound
@@ -320,7 +320,7 @@ module Rack::Cache
         [key, size]
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         cache.delete(key)
         nil
       end

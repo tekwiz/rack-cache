@@ -155,7 +155,7 @@ module Rack::Cache
 
     # Remove all cached entries at the key specified. No error is raised
     # when the key does not exist.
-    def purge(key)
+    def purge(key, path=false, query=false)
       raise NotImplemented
     end
 
@@ -184,8 +184,15 @@ module Rack::Cache
         @hash[key] = entries
       end
 
-      def purge(key)
-        @hash.delete(key)
+      def purge(key, path=false, query=false)
+        path_pattern = path ? Regexp.new("#{key}/.*$") : nil
+        query_pattern = path ? Regexp.new("#{key}\?[^/]*$") : nil
+
+        @hash.delete_if do |cache_key, cache_value|
+          cache_key == key or
+          path_pattern =~ cache_key or
+          query_pattern =~ cache_key
+        end
         nil
       end
 
@@ -229,7 +236,7 @@ module Rack::Cache
         end
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         path = key_path(key)
         File.unlink(path)
         nil
@@ -322,7 +329,7 @@ module Rack::Cache
         cache.set(key, entries)
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         cache.delete(hexdigest(key))
         nil
       end
@@ -355,7 +362,7 @@ module Rack::Cache
         cache.set(key, entries)
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         key = hexdigest(key)
         cache.delete(key)
         nil
@@ -390,7 +397,7 @@ module Rack::Cache
         cache.put(key, entries)
       end
 
-      def purge(key)
+      def purge(key, path=false, query=false)
         key = hexdigest(key)
         cache.delete(key)
         nil
