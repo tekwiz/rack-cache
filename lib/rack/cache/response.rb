@@ -90,7 +90,7 @@ module Rack::Cache
     # fresh when it includes a Cache-Control/max-age indicator or Expiration
     # header and the calculated age is less than the freshness lifetime.
     def fresh?
-      ttl && ttl > 0
+      only_cache? or  (ttl && ttl > 0)
     end
 
     # Determine if the response is worth caching under any circumstance. Responses
@@ -250,5 +250,8 @@ module Rack::Cache
       vary.split(/[\s,]+/)
     end
 
+    def only_cache?
+      cache_control.only_cache?
+    end
   end
 end

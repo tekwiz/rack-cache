@@ -50,6 +50,15 @@ module Rack
         self['no-cache']
       end
 
+      # Cache-Control Extension.  When set in a response, a cache MUST use the
+      # response to satisfy a subsequent request without revalidating with the
+      # origin server.  This avoid putting additional load on the origin
+      # server.  Note it is up to the origin server to purge the cache if
+      # the original response becomes stale.
+      def only_cache?
+        self['only-cache']
+      end
+      
       # Indicates that the response MUST NOT be stored under any circumstances.
       #
       # The purpose of the no-store directive is to prevent the
