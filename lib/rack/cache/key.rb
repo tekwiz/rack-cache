@@ -1,3 +1,5 @@
+require 'uri'
+require 'cgi'
 require 'rack/utils'
 
 module Rack::Cache
@@ -7,26 +9,25 @@ module Rack::Cache
     # Implement .call, since it seems like the "Rack-y" thing to do. Plus, it
     # opens the door for cache key generators to just be blocks.
     def self.call(request)
-      new(request).generate
+      new(request.url).generate
     end
 
-    def initialize(request)
-      @request = request
+    def initialize(uri)
+      @uri = uri.kind_of?(URI) ? uri : URI.parse(uri)
     end
 
     # Generate a normalized cache key for the request.
     def generate
       parts = []
-      parts << @request.scheme << "://"
-      parts << @request.host
+      parts << @uri.scheme << "://"
+      parts << @uri.host
 
-      if @request.scheme == "https" && @request.port != 443 ||
-          @request.scheme == "http" && @request.port != 80
-        parts << ":" << @request.port.to_s
+      if @uri.scheme == "https" && @uri.port != 443 ||
+          @uri.scheme == "http" && @uri.port != 80
+        parts << ":" << @uri.port.to_s
       end
 
-      parts << @request.script_name
-      parts << @request.path_info
+      parts << @uri.path
 
       if qs = query_string
         parts << "?"
@@ -40,13 +41,14 @@ module Rack::Cache
     # Build a normalized query string by alphabetizing all keys/values
     # and applying consistent escaping.
     def query_string
-      return nil if @request.query_string.nil?
+      return nil if @uri.query.nil?
 
-      @request.query_string.split(/[&;] */n).
-        map { |p| unescape(p).split('=', 2) }.
-        sort.
-        map { |k,v| "#{escape(k)}=#{escape(v)}" }.
-        join('&')
+      params = CGI.parse(@uri.query)
+      params.keys.sort.map do |key|
+        params[key].sort.map do |value|
+          "#{escape(key)}=#{escape(value)}"
+        end
+      end.join('&')
     end
   end
 end
