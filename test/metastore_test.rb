@@ -1,4 +1,7 @@
 require "#{File.dirname(__FILE__)}/spec_setup"
+
+require 'rack/cache/key'
+require 'rack/cache/entitystore'
 require 'rack/cache/metastore'
 
 describe_shared 'A Rack::Cache::MetaStore Implementation' do
@@ -45,6 +48,21 @@ describe_shared 'A Rack::Cache::MetaStore Implementation' do
     @store.write('/test', [[{},{}]])
     @store.purge('/test').should.be nil
     @store.read('/test').should.equal []
+  end
+
+  it 'removes child entries for key with #purge' do
+    @store.write('/test', [[{},{}]])
+    @store.write('/test/1', [[{},{}]])
+    @store.write('/test/1/2', [[{},{}]])
+
+    @store.read('/test').should.not.be.empty
+    @store.read('/test/1').should.not.be.empty
+    @store.read('/test/1/2').should.not.be.empty
+
+    @store.purge('/test', true)
+    @store.read('/test').should.be.empty
+    @store.read('/test/1').should.be.empty
+    @store.read('/test/1/2').should.be.empty
   end
 
   %w[/test http://example.com:8080/ /test?x=y /test?x=y&p=q].each do |key|
