@@ -42,6 +42,12 @@ module Rack::Cache
       @headers = other.headers.dup
     end
 
+    def finalize
+      if self.body.kind_of?(IO) and !self.body.closed?
+        self.body.close
+      end
+    end
+
     # Return the status, headers, and body in a three-tuple.
     def to_a
       [status, headers.to_hash, body]

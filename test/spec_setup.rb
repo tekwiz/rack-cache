@@ -1,6 +1,8 @@
 require 'pp'
-require 'tmpdir'
 require 'stringio'
+require 'time'
+require 'tmpdir'
+require 'uri'
 
 [ STDOUT, STDERR ].each { |io| io.sync = true }
 
@@ -36,6 +38,14 @@ end
 
 have_memcached?
 
+def need_memcached(forwhat)
+  if have_memcached?
+    yield
+  else
+    STDERR.puts "skipping memcached #{forwhat}"
+  end
+end
+
 def have_dalli?(server=ENV['MEMCACHED'])
   return $dalli unless $dalli.nil?
   require 'dalli'
@@ -61,19 +71,36 @@ def need_dalli(forwhat)
   end
 end
 
-def need_memcached(forwhat)
-  if have_memcached?
-    yield
-  else
-    STDERR.puts "skipping memcached #{forwhat}"
-  end
-end
-
 def need_java(forwhat)
   if RUBY_PLATFORM =~ /java/
     yield
   else
     STDERR.puts "skipping app engine #{forwhat}"
+  end
+end
+
+# Set the REDIS environment variable as follows to enable testing
+# of the Redis meta and entity stores.
+ENV['REDIS'] ||= 'redis://localhost:6379'
+
+def have_redis?
+  require 'redis'
+  require 'redis-store'
+  true
+rescue LoadError => boom
+  false
+rescue => boom
+  STDERR.puts "redis not working. related tests will be skipped."
+  false
+end
+
+have_redis?
+
+def need_redis(forwhat)
+  if have_redis?
+    yield
+  else
+    STDERR.puts "skipping redis #{forwhat}"
   end
 end
 

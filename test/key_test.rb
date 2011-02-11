@@ -13,7 +13,7 @@ describe 'A Rack::Cache::Key' do
       'rack.url_scheme' => 'https',
       'HTTP_HOST' => 'www2.example.org'
     )
-    new_key(request).should.include('https://')
+    new_key(request).should.include('https')
   end
 
   it "includes host" do
@@ -28,12 +28,12 @@ describe 'A Rack::Cache::Key' do
 
   it "sorts the query string by key/value after decoding" do
     request = mock_request('/test?x=q&a=b&%78=c')
-    new_key(request).should.match(/\?a=b&x=c&x=q$/)
+    new_key(request).should.match(/\/_a=b&x=c&x=q/)
   end
 
   it "is in order of scheme, host, path, params" do
     request = mock_request('/test?x=y', "HTTP_HOST" => 'www2.example.org')
-    new_key(request).should.equal "http://www2.example.org/test?x=y"
+    new_key(request).should.equal "http/www2.example.org/test/_x=y.4ddd21817ff0974a30cc8d70e899ba58f0ad1d1f"
   end
 
   # Helper Methods =============================================================
