@@ -3,8 +3,8 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
 
   s.name = 'rack-cache'
-  s.version = '1.0'
-  s.date = '2010-12-24'
+  s.version = '1.0.1'
+  s.date = '2011-04-13'
 
   s.description = "HTTP Caching for Rack"
   s.summary     = "HTTP Caching for Rack"
@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
     doc/storage.markdown
     example/sinatra/app.rb
     example/sinatra/views/index.erb
+    lib/rack-cache.rb
     lib/rack/cache.rb
     lib/rack/cache/appengine.rb
     lib/rack/cache/cachecontrol.rb
@@ -61,7 +62,7 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = %w[README COPYING TODO CHANGES]
   s.add_dependency 'rack', '>= 0.4'
 
-  s.add_development_dependency 'test-spec'
+  s.add_development_dependency 'bacon'
   s.add_development_dependency 'memcached'
   s.add_development_dependency 'dalli'
 

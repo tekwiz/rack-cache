@@ -7,20 +7,21 @@ CLOBBER.include %w[dist]
 
 # SPECS =====================================================================
 
-desc 'Run specs with story style output'
-task :spec do
-  sh 'specrb --specdox -Ilib:test test/*_test.rb'
-end
-
 desc 'Run specs with unit test style output'
 task :test => FileList['test/*_test.rb'] do |t|
   suite = t.prerequisites
-  sh "specrb -Ilib:test #{suite.join(' ')}", :verbose => false
+  sh "bacon -q -I.:lib:test #{suite.join(' ')}", :verbose => false
+end
+
+desc 'Run specs with story style output'
+task :spec => FileList['test/*_test.rb'] do |t|
+  suite = t.prerequisites
+  sh "bacon -I.:lib:test #{suite.join(' ')}", :verbose => false
 end
 
 desc 'Generate test coverage report'
 task :rcov do
-  sh "rcov -Ilib:test test/*_test.rb"
+  sh "rcov -I.:lib:test test/*_test.rb"
 end
 
 # DOC =======================================================================
