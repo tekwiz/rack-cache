@@ -51,19 +51,20 @@ module Rack::Cache
     # Generate a normalized cache key for the request.
     def to_s
       parts = []
-      parts << @uri.scheme
+      parts << @uri.scheme << "://"
       parts << @uri.host
 
       if @uri.scheme == "https" && @uri.port != 443 ||
           @uri.scheme == "http" && @uri.port != 80
-        parts << @uri.port.to_s
+        parts << ":" << @uri.port.to_s
       end
 
-      parts << @uri.path
-      parts << query_string
+      if qs = query_string
+        parts << "?"
+        parts << qs
+      end
 
-      key = parts.compact.join('/').gsub(%r{//}, '/')
-      "#{key}.#{hexdigest(key.to_s)}"
+      parts.join
     end
 
     private
@@ -78,11 +79,7 @@ module Rack::Cache
         end
       end
 
-      "_#{params.join('&')}"
-    end
-
-    def hexdigest(data)
-      Digest::SHA1.hexdigest(data)
+      params.join('&')
     end
   end
 end
