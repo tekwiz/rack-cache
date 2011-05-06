@@ -2,38 +2,6 @@ require 'uri'
 require 'cgi'
 require 'rack/utils'
 
-# A cache key is hierarchal, similar to a file system.  This allows multiple keys
-# to be cached at once.
-#
-# For example, imagine you have a book store application that supports the following
-# uris and cache keys (where hexdigest is the MD5 hash of the key)
-#
-#   GET /books
-#   Key: /books/_.hex_digest
-#
-#   GET /books?sort=title
-#   Key: /books/_sort=title.hex_digest
-#
-#   GET /books?sort=author
-#   Key: /books/_sort=title.hex_digest
-#
-#   GET /book/1
-#   Key: /books/1/_.hex_digest
-#
-#   GET /book/2
-#   Key: /books/2/_.hex_digest
-#
-# Now assume the information about books is updated.
-#
-#   * A book is added.  Uncache any key /books/_*
-#   * A book is deleted.  Uncache any key /books/_*
-#   * Book 1 is update/deleted.  Uncache any key /books/_* and /books/1/*
-#   * Book 3 is update/deleted.  Uncache any key /books/_* and /books/3/*
-#
-
-
-
-
 module Rack::Cache
   class Key
     include Rack::Utils
