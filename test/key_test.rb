@@ -43,8 +43,8 @@ describe 'A Rack::Cache::Key' do
     new_key(request).should.match(/\?a=b&x=c&x=q$/)
   end
 
-  it "is in order of scheme, host, path, params" do
-    request = mock_request('/test?x=y', "HTTP_HOST" => 'www2.example.org')
-    new_key(request).should.equal "http://www2.example.org/test?x=y"
+  it "is in order of scheme, host, port, path, params" do
+    request = mock_request('http://www2.example.org:88/test?x=y')
+    new_key(request).should.equal "http://www2.example.org:88/test?x=y"
   end
 end

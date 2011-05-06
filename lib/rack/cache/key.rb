@@ -27,6 +27,8 @@ module Rack::Cache
         parts << ":" << @uri.port.to_s
       end
 
+      parts << @uri.path
+
       if qs = query_string
         parts << "?"
         parts << qs
