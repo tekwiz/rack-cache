@@ -1,16 +1,14 @@
 require 'pp'
-require 'stringio'
-require 'time'
 require 'tmpdir'
-require 'uri'
+require 'stringio'
 
-[ STDOUT, STDERR ].each { |io| io.sync = true }
+[STDOUT, STDERR].each { |io| io.sync = true }
 
 begin
-  require 'test/spec'
+  require 'bacon'
 rescue LoadError => boom
   require 'rubygems' rescue nil
-  require 'test/spec'
+  require 'bacon'
 end
 
 # Set the MEMCACHED environment variable as follows to enable testing
@@ -21,30 +19,29 @@ $dalli = nil
 
 def have_memcached?(server=ENV['MEMCACHED'])
   return $memcached unless $memcached.nil?
-  v, $VERBOSE = $VERBOSE, nil # silence warnings from memcached
-  require 'memcached'
-  $VERBOSE = v
+
+  # silence warnings from memcached
+  begin
+    v, $VERBOSE = $VERBOSE, nil
+    require 'memcached'
+  ensure
+    $VERBOSE = v
+  end
+
   $memcached = Memcached.new(server)
   $memcached.set('ping', '')
   true
 rescue LoadError => boom
+  warn "memcached library not available. related tests will be skipped."
   $memcached = false
   false
 rescue => boom
-  STDERR.puts "memcached not working. related tests will be skipped."
+  warn "memcached not working. related tests will be skipped."
   $memcached = false
   false
 end
 
 have_memcached?
-
-def need_memcached(forwhat)
-  if have_memcached?
-    yield
-  else
-    STDERR.puts "skipping memcached #{forwhat}"
-  end
-end
 
 def have_dalli?(server=ENV['MEMCACHED'])
   return $dalli unless $dalli.nil?
@@ -53,10 +50,11 @@ def have_dalli?(server=ENV['MEMCACHED'])
   $dalli.set('ping', '')
   true
 rescue LoadError => boom
+  warn "dalli library not available. related tests will be skipped."
   $dalli = false
   false
 rescue => boom
-  STDERR.puts "dalli not working. related tests will be skipped."
+  warn "dalli not working. related tests will be skipped."
   $dalli = false
   false
 end
@@ -64,54 +62,23 @@ end
 have_dalli?
 
 def need_dalli(forwhat)
-  if have_dalli?
-    yield
-  else
-    STDERR.puts "skipping Dalli #{forwhat}"
-  end
+  yield if have_dalli?
+end
+
+def need_memcached(forwhat)
+  yield if have_memcached?
 end
 
 def need_java(forwhat)
-  if RUBY_PLATFORM =~ /java/
-    yield
-  else
-    STDERR.puts "skipping app engine #{forwhat}"
-  end
-end
-
-# Set the REDIS environment variable as follows to enable testing
-# of the Redis meta and entity stores.
-ENV['REDIS'] ||= 'redis://localhost:6379'
-
-def have_redis?
-  require 'redis'
-  require 'redis-store'
-  true
-rescue LoadError => boom
-  false
-rescue => boom
-  STDERR.puts "redis not working. related tests will be skipped."
-  false
-end
-
-have_redis?
-
-def need_redis(forwhat)
-  if have_redis?
-    yield
-  else
-    STDERR.puts "skipping redis #{forwhat}"
-  end
+  yield if RUBY_PLATFORM =~ /java/
 end
 
 
 # Setup the load path ..
-path = File.dirname(__FILE__)
-$LOAD_PATH.unshift path
-$LOAD_PATH.unshift File.expand_path(File.join(path, '..', 'lib'))
+$LOAD_PATH.unshift File.dirname(File.dirname(__FILE__)) + '/lib'
+$LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'rack/cache'
-
 
 # Methods for constructing downstream applications / response
 # generators.
@@ -156,18 +123,18 @@ module CacheContextHelpers
 
   def teardown_cache_context
     @app, @cache_template, @cache, @caches, @called,
-    @request, @response, @responses, @cache_config = nil
+    @request, @response, @responses, @cache_config, @cache_prototype = nil
   end
 
   # A basic response with 200 status code and a tiny body.
-  def respond_with(status=200, headers={}, body=['Hello World'])
+  def respond_with(status=200, headers={}, body=['Hello World'], &bk)
     called = false
     @app =
       lambda do |env|
         called = true
         response = Rack::Response.new(body, status, headers)
         request = Rack::Request.new(env)
-        yield request, response if block_given?
+        bk.call(request, response) if bk
         response.finish
       end
     @app.meta_def(:called?) { called }
@@ -238,7 +205,7 @@ module TestHelpers
 
 end
 
-class Test::Unit::TestCase
+class Bacon::Context
   include TestHelpers
   include CacheContextHelpers
 end
