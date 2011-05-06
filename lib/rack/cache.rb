@@ -32,6 +32,7 @@ module Rack::Cache
   autoload :Context,      'rack/cache/context'
   autoload :Storage,      'rack/cache/storage'
   autoload :CacheControl, 'rack/cache/cachecontrol'
+  autoload :Purge,        'rack/cache/purge'
 
   # Create a new Rack::Cache middleware component that fetches resources from
   # the specified backend application. The +options+ Hash can be used to

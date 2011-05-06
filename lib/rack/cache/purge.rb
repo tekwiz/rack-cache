@@ -1,13 +1,27 @@
 module Rack::Cache
+  class Storage
+    attr_reader :metastores, :entitystores
+  end
+  
   class Purge
-    def self.purge(uri, path=false, query=false)
-      key = Key.new(uri)
-      storage.metastores.values.each do |store|
-        store.purge(key.to_s, path, query)
-      end
+    def self.purge(uri)
+      key = Rack::Cache::Key.new(uri)
 
-      storage.entitystores.values.each do |store|
-        store.purge(key.to_s, path, query)
+      storage.metastores.values.each do |metastore|
+        # Lookup all cached entries for this key
+        entries = metastore.read(key.to_s)
+        next unless entries
+
+        # Next purge the metastore of all these entries
+        metastore.purge(key.to_s)
+
+        # Last purge entity store
+        entries.each do |req, res|
+          digest = res['X-Content-Digest']
+          storage.entitystores.values.each do |entitystore|
+            entitystore.purge(digest)
+          end
+        end
       end
     end
 
