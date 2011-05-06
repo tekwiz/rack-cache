@@ -66,7 +66,7 @@ module Rack::Cache
       end
 
       # Remove the body corresponding to key; return nil.
-      def purge(key, children=false, variants=false)
+      def purge(key)
         @hash.delete(key)
         nil
       end
@@ -137,7 +137,7 @@ module Rack::Cache
         [key, size]
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         File.unlink body_path(key)
         nil
       rescue Errno::ENOENT
@@ -233,7 +233,7 @@ module Rack::Cache
         [key, size] if cache.set(key, buf.string)
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         cache.delete(key)
         nil
       end
@@ -274,7 +274,7 @@ module Rack::Cache
         [key, size]
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         cache.delete(key)
         nil
       rescue ::Memcached::NotFound
@@ -322,7 +322,7 @@ module Rack::Cache
         [key, size]
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         cache.delete(key)
         nil
       end
@@ -330,52 +330,12 @@ module Rack::Cache
       def self.resolve(uri)
         self.new(:namespace => uri.host)
       end
+
     end
 
     GAECACHE = GAEStore
     GAE = GAEStore
 
-    class Redis < EntityStore
-      # The underlying ::Redis instance used to communicate with the Redis daemon.
-      attr_reader :cache
-
-      extend Rack::Utils
-
-      def open(key)
-        data = read(key)
-        data && [data]
-      end
-
-      def self.resolve(uri)
-        db = uri.path.sub(/^\//, '')
-        db = "0" if db.empty?
-        server = { :host => uri.host, :port => uri.port || "6379", :db => db, :password => uri.password }
-        new server
-      end
-
-      def initialize(server, options = {})
-        @cache = ::Redis.new server
-      end
-
-      def exist?(key)
-        cache.exists key
-      end
-
-      def read(key)
-        cache.get key
-      end
-
-      def write(body)
-        buf = StringIO.new
-        key, size = slurp(body){|part| buf.write(part) }
-        [key, size] if cache.set(key, buf.string)
-      end
-
-      def purge(key)
-        cache.del key
-        nil
-      end
-    end
-    REDIS = Redis
   end
+
 end

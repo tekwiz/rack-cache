@@ -9,7 +9,6 @@ module Rack::Cache
   # to ensure that only a single instance of a backing store is created per
   # unique storage URI.
   class Storage
-    attr_reader :entitystores, :metastores
     def initialize
       @metastores = {}
       @entitystores = {}

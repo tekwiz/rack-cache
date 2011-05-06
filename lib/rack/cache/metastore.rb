@@ -156,7 +156,7 @@ module Rack::Cache
 
     # Remove all cached entries at the key specified. No error is raised
     # when the key does not exist.
-    def purge(key, children=false, variants=false)
+    def purge(key)
       raise NotImplemented
     end
 
@@ -185,15 +185,8 @@ module Rack::Cache
         @hash[key] = entries
       end
 
-      def purge(key, children=false, variants=false)
-        children_pattern = children ? Regexp.new("#{key}/.*$") : nil
-        variants_pattern = variants ? Regexp.new("#{key}\?[^/]*$") : nil
-
-        @hash.delete_if do |cache_key, cache_value|
-          cache_key == key or
-          children_pattern =~ cache_key or
-          variants_pattern =~ cache_key
-        end
+      def purge(key)
+        @hash.delete(key)
         nil
       end
 
@@ -232,24 +225,14 @@ module Rack::Cache
           path = key_path(key)
           File.open(path, 'wb') { |io| Marshal.dump(entries, io, -1) }
         rescue Errno::ENOENT, IOError
-          FileUtils.mkdir_p(File.dirname(path), :mode => 0755)
+          Dir.mkdir(File.dirname(path), 0755)
           retry if (tries += 1) == 1
         end
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         path = key_path(key)
-        dir = File.dirname(path)
-
-        # Unlink the path
-        FileUtils.remove(path)
-
-        # Unlink subdirectories or other files
-        FileUtils.rm_r(Dir.glob("#{dir}/*/")) if children
-
-        # Unlink files in the directory
-        FileUtils.rm(Dir.glob("#{dir}/*").select {|file| !File.directory?(file)}) if variants
-
+        File.unlink(path)
         nil
       rescue Errno::ENOENT, IOError
         nil
@@ -257,7 +240,13 @@ module Rack::Cache
 
     private
       def key_path(key)
-        File.join(root, key, hexdigest(key))
+        File.join(root, spread(hexdigest(key)))
+      end
+
+      def spread(sha, n=2)
+        sha = sha.dup
+        sha[n,0] = '/'
+        sha
       end
 
     public
@@ -334,7 +323,7 @@ module Rack::Cache
         cache.set(key, entries)
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         cache.delete(hexdigest(key))
         nil
       end
@@ -367,7 +356,7 @@ module Rack::Cache
         cache.set(key, entries)
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         key = hexdigest(key)
         cache.delete(key)
         nil
@@ -402,7 +391,7 @@ module Rack::Cache
         cache.put(key, entries)
       end
 
-      def purge(key, children=false, variants=false)
+      def purge(key)
         key = hexdigest(key)
         cache.delete(key)
         nil
@@ -411,57 +400,12 @@ module Rack::Cache
       def self.resolve(uri)
         self.new(:namespace => uri.host)
       end
+
     end
 
     GAECACHE = GAEStore
     GAE = GAEStore
 
-    class Redis < MetaStore
-      extend Rack::Utils
-
-      # The Redis::Store object used to communicate with the Redis daemon.
-      attr_reader :cache
-
-      def self.resolve(uri)
-        db = uri.path.sub(/^\//, '')
-        db = "0" if db.empty?
-        server = { :host => uri.host, :port => uri.port || "6379", :db => db, :password => uri.password }
-        new server
-      end
-
-      def initialize(server, options = {})
-        @cache = ::Redis::Factory.create server
-      end
-
-      def read(key)
-        cache.get(key) || []
-      end
-
-      def write(key, entries)
-        cache.set(key, entries)
-      end
-
-      def purge(key, children=false, variants=false)
-        keys = [key]
-
-        if children || variants
-          child_keys = cache.keys("#{::File.dirname(key)}/*")
-          variant_keys = cache.keys("#{::File.dirname(key)}/_*")
-
-          keys += (child_keys - variant_keys) if children
-          keys += variant_keys if variants
-        end
-
-        cache.del(*keys)
-        nil
-      rescue Errno::ENOENT, IOError
-        nil
-      end
-
-#      def key_path(key)
-#        "#{key}.#{hexdigest(key)}"
-#      end
-    end
-    REDIS = Redis
   end
+
 end
