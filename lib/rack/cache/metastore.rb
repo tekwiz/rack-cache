@@ -104,6 +104,12 @@ module Rack::Cache
       write key, entries if modified
     end
 
+    def entity_keys(key)
+      read(key.to_s).map do |req, res|
+         res['X-Content-Digest']
+      end
+    end
+
   private
 
     # Extract the environment Hash from +request+ while making any

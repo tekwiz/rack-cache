@@ -108,6 +108,14 @@ shared 'A Rack::Cache::MetaStore Implementation' do
     @store.cache_key(request).should == 'tset/'
   end
 
+  it "returns entity keys" do
+    key = store_simple_entry('/test')
+    entity_keys = @store.entity_keys(key)
+
+    entity_keys.length.should.equal(1)
+    entity_keys.first.should.equal('a94a8fe5ccb19ba61c4c0873d391e987982fbbd3')
+  end
+
   it 'does not blow up when given a non-marhsalable object with an ALL_CAPS key' do
     store_simple_entry('/bad', { 'SOME_THING' => Proc.new {} })
   end

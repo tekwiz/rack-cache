@@ -26,15 +26,15 @@ describe 'A Rack::Cache::Purge' do
   it 'deletes stored entries with #purge' do
     key = Rack::Cache::Key.call(@request)
     @metastore.store(@request, @response, @entitystore)
-    resp = @metastore.lookup(@request, @entitystore)
-    digest = resp.headers['X-Content-Digest']
+    entity_keys = @metastore.entity_keys(key.to_s)
+    entity_keys.length.should.equal(1)
 
     @metastore.read(key).should.not.be.nil
-    @entitystore.read(digest).should.not.be.nil
+    @entitystore.read(entity_keys.first).should.not.be.nil
 
-    Rack::Cache::Purge.purge(key.to_s)
+    @storage.purge(key.to_s)
 
     @metastore.read(key).should.be.empty
-    @entitystore.read(digest).should.be.nil
+    @entitystore.read(entity_keys.first).should.be.nil
   end
 end
