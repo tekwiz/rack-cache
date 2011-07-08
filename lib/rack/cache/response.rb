@@ -42,6 +42,12 @@ module Rack::Cache
       @headers = other.headers.dup
     end
 
+    def finalize
+      if self.body.kind_of?(IO) and !self.body.closed?
+        self.body.close
+      end
+    end
+
     # Return the status, headers, and body in a three-tuple.
     def to_a
       [status, headers.to_hash, body]
@@ -90,7 +96,7 @@ module Rack::Cache
     # fresh when it includes a Cache-Control/max-age indicator or Expiration
     # header and the calculated age is less than the freshness lifetime.
     def fresh?
-      ttl && ttl > 0
+      only_cache? or  (ttl && ttl > 0)
     end
 
     # Determine if the response is worth caching under any circumstance. Responses
@@ -251,5 +257,8 @@ module Rack::Cache
       vary.split(/[\s,]+/)
     end
 
+    def only_cache?
+      cache_control.only_cache?
+    end
   end
 end

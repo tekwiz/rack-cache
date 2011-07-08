@@ -22,6 +22,24 @@ module Rack::Cache
       @entitystores[uri.to_s] ||= create_store(EntityStore, uri)
     end
 
+    def purge(uri)
+      key = Rack::Cache::Key.new(uri)
+
+      @metastores.values.each do |metastore|
+        entity_keys = metastore.entity_keys(key)
+
+        # Next purge the metastore
+        metastore.purge(key.to_s)
+
+        # Last purge entity store
+        @entitystores.values.each do |entitystore|
+          entity_keys.each do |entity_key|
+            entitystore.purge(entity_key)
+          end
+        end
+      end
+    end
+
     def clear
       @metastores.clear
       @entitystores.clear
