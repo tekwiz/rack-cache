@@ -86,10 +86,13 @@ module Rack::Cache
       # created the first time the store is instansiated if it does not
       # already exist.
       attr_reader :root
+      attr_reader :dir_mode
 
-      def initialize(root)
+      def initialize(root, options = {})
         @root = root
-        FileUtils.mkdir_p root, :mode => 0755
+        @dir_mode = options[:dir_mode] || 0755
+
+        FileUtils.mkdir_p root, :mode => dir_mode
       end
 
       def exist?(key)
@@ -131,7 +134,7 @@ module Rack::Cache
         if File.exist?(path)
           File.unlink temp_file
         else
-          FileUtils.mkdir_p File.dirname(path), :mode => 0755
+          FileUtils.mkdir_p File.dirname(path), :mode => dir_mode
           FileUtils.mv temp_file, path
         end
         [key, size]
