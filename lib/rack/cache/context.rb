@@ -8,6 +8,7 @@ module Rack::Cache
   # cache logic, including the core logic engine.
   class Context
     include Rack::Cache::Options
+    include Rack::Cache::Observable
 
     # Array of trace Symbols
     attr_reader :trace
@@ -57,7 +58,9 @@ module Rack::Cache
       @trace = []
       @default_options.each { |k,v| env[k] ||= v }
       @env = env
-      @request = Request.new(@env.dup.freeze)
+      @request = Request.new(@env.dup)
+
+      run_observers(:on_request)
 
       response =
         if @request.get? || @request.head?
@@ -129,7 +132,10 @@ module Rack::Cache
 
     # Delegate the request to the backend and create the response.
     def forward
-      Response.new(*backend.call(@env))
+      run_observers(:before_forward)
+      response = Response.new(*backend.call(@env))
+      run_observers(:after_forward, response)
+      response
     end
 
     # The request is sent to the backend, and the backend's response is sent
@@ -171,6 +177,7 @@ module Rack::Cache
           if fresh_enough?(entry)
             record :fresh
             entry.headers['Age'] = entry.age.to_s
+            run_observers(:on_hit, entry)
             entry
           else
             record :stale

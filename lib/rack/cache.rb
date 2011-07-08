@@ -29,6 +29,8 @@ require 'rack'
 module Rack::Cache
   autoload :Request,      'rack/cache/request'
   autoload :Response,     'rack/cache/response'
+  autoload :Observer,     'rack/cache/observer'
+  autoload :Observable,   'rack/cache/observable'
   autoload :Context,      'rack/cache/context'
   autoload :Storage,      'rack/cache/storage'
   autoload :CacheControl, 'rack/cache/cachecontrol'
@@ -41,5 +43,10 @@ module Rack::Cache
   # object.
   def self.new(backend, options={}, &b)
     Context.new(backend, options, &b)
+  end
+
+  # Adds an Observer
+  def self.add_observer(*args)
+    Context.add_observer(*args)
   end
 end
