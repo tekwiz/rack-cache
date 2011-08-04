@@ -13,8 +13,8 @@ module Rack::Cache
     # Evaluates the validity of a callback call
     def self.valid_callback?(name, arity)
       case arity
-      when 0: CALLBACKS.include?(name.to_sym)
-      when 1: RESPONSE_CALLBACKS.include?(name.to_sym)
+      when 0 ; CALLBACKS.include?(name.to_sym)
+      when 1 ; RESPONSE_CALLBACKS.include?(name.to_sym)
       else false
       end
     end
