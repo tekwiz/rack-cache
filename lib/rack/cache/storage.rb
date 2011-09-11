@@ -48,9 +48,7 @@ module Rack::Cache
 
   private
     def create_store(type, uri)
-      if uri.is_a?(type)
-        uri
-      elsif uri.respond_to?(:scheme) || uri.respond_to?(:to_str)
+      if uri.respond_to?(:scheme) || uri.respond_to?(:to_str)
         uri = URI.parse(uri) unless uri.respond_to?(:scheme)
         if type.const_defined?(uri.scheme.upcase)
           klass = type.const_get(uri.scheme.upcase)
