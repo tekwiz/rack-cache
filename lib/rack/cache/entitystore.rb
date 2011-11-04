@@ -58,7 +58,7 @@ module Rack::Cache
       end
 
       # Write the Rack response body immediately and return the SHA1 key.
-      def write(body)
+      def write(body, ttl=nil)
         buf = []
         key, size = slurp(body) { |part| buf << part }
         @hash[key] = buf
@@ -122,7 +122,7 @@ module Rack::Cache
         nil
       end
 
-      def write(body)
+      def write(body, ttl=nil)
         filename = ['buf', $$, Thread.current.object_id].join('-')
         temp_file = storage_path(filename)
         key, size =
@@ -230,10 +230,10 @@ module Rack::Cache
         data
       end
 
-      def write(body)
+      def write(body, ttl=nil)
         buf = StringIO.new
         key, size = slurp(body){|part| buf.write(part) }
-        [key, size] if cache.set(key, buf.string)
+        [key, size] if cache.set(key, buf.string, ttl)
       end
 
       def purge(key)
@@ -270,10 +270,10 @@ module Rack::Cache
         nil
       end
 
-      def write(body)
+      def write(body, ttl=0)
         buf = StringIO.new
         key, size = slurp(body){|part| buf.write(part) }
-        cache.set(key, buf.string, 0, false)
+        cache.set(key, buf.string, ttl, false)
         [key, size]
       end
 
@@ -318,10 +318,10 @@ module Rack::Cache
         end
       end
 
-      def write(body)
+      def write(body, ttl=nil)
         buf = StringIO.new
         key, size = slurp(body){|part| buf.write(part) }
-        cache.put(key, buf.string)
+        cache.put(key, buf.string, ttl)
         [key, size]
       end
 
