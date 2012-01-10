@@ -19,6 +19,7 @@ module Rack::Cache
     def initialize(backend, options={})
       @backend = backend
       @trace = []
+      @env = nil
 
       initialize_options options
       yield self if block_given?
