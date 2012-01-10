@@ -19,6 +19,7 @@ module Rack::Cache
     def initialize(backend, options={})
       @backend = backend
       @trace = []
+      @env = nil
 
       initialize_options options
       yield self if block_given?
@@ -64,7 +65,7 @@ module Rack::Cache
 
       response =
         if @request.get? || @request.head?
-          if !@env['HTTP_EXPECT']
+          if !@env['HTTP_EXPECT'] && !@env['rack-cache.force-pass']
             lookup
           else
             pass
@@ -238,14 +239,12 @@ module Rack::Cache
     end
 
     # The cache missed or a reload is required. Forward the request to the
-    # backend and determine whether the response should be stored.
+    # backend and determine whether the response should be stored. This allows
+    # conditional / validation requests through to the backend but performs no
+    # caching of the response when the backend returns a 304.
     def fetch
       # send no head requests because we want content
       @env['REQUEST_METHOD'] = 'GET'
-
-      # avoid that the backend sends no content
-      @env.delete('HTTP_IF_MODIFIED_SINCE')
-      @env.delete('HTTP_IF_NONE_MATCH')
 
       response = forward
 

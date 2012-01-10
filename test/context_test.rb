@@ -15,6 +15,16 @@ describe 'Rack::Cache::Context' do
     response.headers.should.not.include 'Age'
   end
 
+  it 'passes on rack-cache.force-pass' do
+    respond_with 200
+    get '/', {"rack-cache.force-pass" => true}
+
+    app.should.be.called
+    response.should.be.ok
+    cache.trace.should == [:pass]
+    response.headers.should.not.include 'Age'
+  end
+
   %w[post put delete].each do |request_method|
     it "invalidates on #{request_method} requests" do
       respond_with 200
@@ -88,8 +98,8 @@ describe 'Rack::Cache::Context' do
       'HTTP_IF_MODIFIED_SINCE' => timestamp
     app.should.be.called
     response.status.should.equal 304
-    response.headers.should.not.include 'Content-Length'
-    response.headers.should.not.include 'Content-Type'
+    response.original_headers.should.not.include 'Content-Length'
+    response.original_headers.should.not.include 'Content-Type'
     response.body.should.empty
     cache.trace.should.include :miss
     cache.trace.should.include :store
@@ -107,8 +117,8 @@ describe 'Rack::Cache::Context' do
       'HTTP_IF_NONE_MATCH' => '12345'
     app.should.be.called
     response.status.should.equal 304
-    response.headers.should.not.include 'Content-Length'
-    response.headers.should.not.include 'Content-Type'
+    response.original_headers.should.not.include 'Content-Length'
+    response.original_headers.should.not.include 'Content-Type'
     response.headers.should.include 'ETag'
     response.body.should.empty
     cache.trace.should.include :miss

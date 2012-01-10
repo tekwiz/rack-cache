@@ -1,3 +1,25 @@
+## 1.1 / September 2011
+
+  * Allow (INM/IMS) validation requests through to backend on miss. Makes it
+    possible to use validation for private / uncacheable responses. A number of
+    people using Rails's stale?() helper reported that their validation logic was
+    never kicking in.
+
+  * Add rack env rack-cache.force-pass option to bypass rack-cache on
+    per request basis
+
+  * Fix an issue with memcache namespace not being set when using the
+    :namespace option instead of :prefix_key.
+
+  * Fix test failures due to MockResponse changes in recent Rack
+    version (issue #34)
+
+## 1.0.3 / August 2011
+
+  * Fix bug passing options to memcached and dalli
+
+  * Document cache_key
+
 ## 1.0.1 / April 2011
 
   * Added lib/rack-cache.rb to match package name for auto-requiring machinery.
