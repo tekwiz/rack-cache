@@ -57,6 +57,7 @@ describe 'Rack::Cache::Context' do
     response.should.be.ok
     cache.trace.should.include :miss
     cache.trace.should.include :store
+    cache.trace.should.not.include :ignore
     response.headers.should.include 'Age'
     response.headers['Cache-Control'].should.equal 'public'
   end
@@ -83,6 +84,40 @@ describe 'Rack::Cache::Context' do
     cache.trace.should.not.include :store
     response.headers.should.not.include 'Age'
     response.headers['Cache-Control'].should.equal 'private'
+  end
+
+  it 'does remove Set-Cookie response header from a cacheable response' do
+    respond_with 200, 'Cache-Control' => 'public', 'ETag' => '"FOO"', 'Set-Cookie' => 'TestCookie=OK'
+    get '/'
+
+    app.should.be.called
+    response.should.be.ok
+    cache.trace.should.include :store
+    cache.trace.should.include :ignore
+    response.headers['Set-Cookie'].should.be.nil
+  end
+
+  it 'does remove all configured ignore_headers from a cacheable response' do
+    respond_with 200, 'Cache-Control' => 'public', 'ETag' => '"FOO"', 'SET-COOKIE' => 'TestCookie=OK', 'X-Strip-Me' => 'Secret'
+    get '/', 'rack-cache.ignore_headers' => ['set-cookie', 'x-strip-me']
+
+    app.should.be.called
+    response.should.be.ok
+    cache.trace.should.include :store
+    cache.trace.should.include :ignore
+    response.headers['Set-Cookie'].should.be.nil
+    response.headers['x-strip-me'].should.be.nil
+  end
+
+  it 'does not remove Set-Cookie response header from a private response' do
+    respond_with 200, 'Cache-Control' => 'private', 'Set-Cookie' => 'TestCookie=OK'
+    get '/'
+
+    app.should.be.called
+    response.should.be.ok
+    cache.trace.should.not.include :store
+    cache.trace.should.not.include :ignore
+    response.headers['Set-Cookie'].should.equal 'TestCookie=OK'
   end
 
   it 'responds with 304 when If-Modified-Since matches Last-Modified' do
@@ -877,5 +912,20 @@ describe 'Rack::Cache::Context' do
     response.should.be.ok
     response.body.should.equal 'Hello World'
     cache.trace.should.include :pass
+  end
+
+  it 'logs to rack.logger if available' do
+    logger = Class.new do
+      attr_reader :logged_level
+
+      def info(message)
+        @logged_level = "info"
+      end
+    end.new
+
+    respond_with 200
+    get '/', 'rack.logger' => logger
+    response.should.be.ok
+    logger.logged_level.should.equal "info"
   end
 end

@@ -92,11 +92,14 @@ module Rack::Cache
       if verbose?
         message = "cache: [%s %s] %s\n" %
           [@request.request_method, @request.fullpath, trace]
-        @env['rack.errors'].write(message)
+        log_info(message)
       end
 
       # tidy up response a bit
-      response.not_modified! if not_modified?(response)
+      if (@request.get? || @request.head?) && not_modified?(response)
+        response.not_modified!
+      end
+
       if @request.head?
         response.body.close if response.body.respond_to?(:close)
         response.body = []
@@ -277,6 +280,7 @@ module Rack::Cache
 
     # Write the response to the cache.
     def store(response)
+      strip_ignore_headers(response)
       metastore.store(@request, response, entitystore)
       response.headers['Age'] = response.age.to_s
     rescue Exception => e
@@ -286,8 +290,27 @@ module Rack::Cache
       record :store
     end
 
+    # Remove all ignored response headers before writing to the cache.
+    def strip_ignore_headers(response)
+      stripped_values = ignore_headers.map { |name| response.headers.delete(name) }
+      record :ignore if stripped_values.any?
+    end
+
     def log_error(exception)
-      @env['rack.errors'].write("cache error: #{exception.message}\n#{exception.backtrace.join("\n")}\n")
+      message = "cache error: #{exception.message}\n#{exception.backtrace.join("\n")}\n"
+      log(:error, message)
+    end
+
+    def log_info(message)
+      log(:info, message)
+    end
+
+    def log(level, message)
+      if @env['rack.logger']
+        @env['rack.logger'].send(level, message)
+      else
+        @env['rack.errors'].write(message)
+      end
     end
   end
 end
